@@ -3,20 +3,25 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Bluebird B2B Enterprise Hub API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: clients
+  - name: vehicles
+  - name: drivers
+  - name: orders
+  - name: invoices
+  - name: dashboard
+  - name: search
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +29,410 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /clients:
+    get:
+      operationId: listClients
+      tags: [clients]
+      summary: List all corporate clients
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Client"
+    post:
+      operationId: createClient
+      tags: [clients]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClientBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+  /clients/{id}:
+    get:
+      operationId: getClient
+      tags: [clients]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientDetail"
+        "404":
+          description: Not found
+
+  /vehicles:
+    get:
+      operationId: listVehicles
+      tags: [vehicles]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [available, booked, maintenance]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vehicle"
+    post:
+      operationId: createVehicle
+      tags: [vehicles]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVehicleBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+  /vehicles/available:
+    get:
+      operationId: listAvailableVehicles
+      tags: [vehicles]
+      summary: List vehicles available between two dates (excludes booked & maintenance)
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vehicle"
+  /vehicles/{id}:
+    get:
+      operationId: getVehicle
+      tags: [vehicles]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VehicleDetail"
+    patch:
+      operationId: updateVehicleStatus
+      tags: [vehicles]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVehicleStatusBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+
+  /drivers:
+    get:
+      operationId: listDrivers
+      tags: [drivers]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Driver"
+    post:
+      operationId: createDriver
+      tags: [drivers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDriverBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Driver"
+  /drivers/{id}:
+    get:
+      operationId: getDriver
+      tags: [drivers]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverDetail"
+
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [draft, active, completed, cancelled]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+    post:
+      operationId: createOrder
+      tags: [orders]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderDetail"
+    patch:
+      operationId: updateOrderStatus
+      tags: [orders]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderStatusBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /invoices:
+    get:
+      operationId: listInvoices
+      tags: [invoices]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [paid, outstanding]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invoice"
+  /invoices/{id}:
+    get:
+      operationId: getInvoice
+      tags: [invoices]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceDetail"
+    patch:
+      operationId: updateInvoiceStatus
+      tags: [invoices]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateInvoiceStatusBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invoice"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: GM dashboard - utilization, revenue, alerts
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/maintenance-alerts:
+    get:
+      operationId: getMaintenanceAlerts
+      tags: [dashboard]
+      summary: Vehicles nearing or past their maintenance completion date
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MaintenanceAlert"
+
+  /dashboard/recent-activity:
+    get:
+      operationId: getRecentActivity
+      tags: [dashboard]
+      summary: Recent activity feed across orders, invoices, fleet
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /search:
+    get:
+      operationId: globalSearch
+      tags: [search]
+      summary: Global search across orders, vehicles, clients, drivers
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResults"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +440,471 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    Client:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+        industry:
+          type: string
+        contactPerson:
+          type: string
+        contactEmail:
+          type: string
+        contactPhone:
+          type: string
+        address:
+          type: string
+        activeOrders:
+          type: integer
+        totalRevenue:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, code, industry, contactPerson, contactEmail, contactPhone, address, activeOrders, totalRevenue, createdAt]
+
+    ClientDetail:
+      allOf:
+        - $ref: "#/components/schemas/Client"
+        - type: object
+          properties:
+            orders:
+              type: array
+              items:
+                $ref: "#/components/schemas/Order"
+            invoices:
+              type: array
+              items:
+                $ref: "#/components/schemas/Invoice"
+          required: [orders, invoices]
+
+    CreateClientBody:
+      type: object
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        industry:
+          type: string
+        contactPerson:
+          type: string
+        contactEmail:
+          type: string
+        contactPhone:
+          type: string
+        address:
+          type: string
+      required: [name, code, industry, contactPerson, contactEmail, contactPhone, address]
+
+    Vehicle:
+      type: object
+      properties:
+        id:
+          type: integer
+        plateNumber:
+          type: string
+        category:
+          type: string
+          description: "e.g. Goldenbird Sedan, Goldenbird SUV, Bigbird Bus"
+        model:
+          type: string
+        year:
+          type: integer
+        capacity:
+          type: integer
+        status:
+          type: string
+          enum: [available, booked, maintenance]
+        maintenanceCompletionDate:
+          type: string
+          format: date
+          nullable: true
+        maintenanceNote:
+          type: string
+          nullable: true
+        dailyRate:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, plateNumber, category, model, year, capacity, status, dailyRate, createdAt]
+
+    VehicleDetail:
+      allOf:
+        - $ref: "#/components/schemas/Vehicle"
+        - type: object
+          properties:
+            orders:
+              type: array
+              items:
+                $ref: "#/components/schemas/Order"
+          required: [orders]
+
+    CreateVehicleBody:
+      type: object
+      properties:
+        plateNumber:
+          type: string
+        category:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        capacity:
+          type: integer
+        dailyRate:
+          type: number
+      required: [plateNumber, category, model, year, capacity, dailyRate]
+
+    UpdateVehicleStatusBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [available, booked, maintenance]
+        maintenanceCompletionDate:
+          type: string
+          format: date
+          nullable: true
+        maintenanceNote:
+          type: string
+          nullable: true
+      required: [status]
+
+    Driver:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        licenseNumber:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+          enum: [available, on_trip, off_duty]
+        rating:
+          type: number
+        yearsOfService:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, licenseNumber, phone, status, rating, yearsOfService, createdAt]
+
+    DriverDetail:
+      allOf:
+        - $ref: "#/components/schemas/Driver"
+        - type: object
+          properties:
+            orders:
+              type: array
+              items:
+                $ref: "#/components/schemas/Order"
+          required: [orders]
+
+    CreateDriverBody:
+      type: object
+      properties:
+        name:
+          type: string
+        licenseNumber:
+          type: string
+        phone:
+          type: string
+      required: [name, licenseNumber, phone]
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        orderNumber:
+          type: string
+        clientId:
+          type: integer
+        clientName:
+          type: string
+        vehicleId:
+          type: integer
+        vehiclePlate:
+          type: string
+        driverId:
+          type: integer
+        driverName:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        pickupLocation:
+          type: string
+        dropoffLocation:
+          type: string
+        price:
+          type: number
+        status:
+          type: string
+          enum: [draft, active, completed, cancelled]
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, orderNumber, clientId, clientName, vehicleId, vehiclePlate, driverId, driverName, startDate, endDate, pickupLocation, dropoffLocation, price, status, createdAt]
+
+    OrderDetail:
+      allOf:
+        - $ref: "#/components/schemas/Order"
+        - type: object
+          properties:
+            invoice:
+              nullable: true
+              $ref: "#/components/schemas/Invoice"
+
+    CreateOrderBody:
+      type: object
+      properties:
+        clientId:
+          type: integer
+        vehicleId:
+          type: integer
+        driverId:
+          type: integer
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        pickupLocation:
+          type: string
+        dropoffLocation:
+          type: string
+        price:
+          type: number
+        notes:
+          type: string
+          nullable: true
+      required: [clientId, vehicleId, driverId, startDate, endDate, pickupLocation, dropoffLocation, price]
+
+    UpdateOrderStatusBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [draft, active, completed, cancelled]
+      required: [status]
+
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: integer
+        invoiceNumber:
+          type: string
+        orderId:
+          type: integer
+        orderNumber:
+          type: string
+        clientId:
+          type: integer
+        clientName:
+          type: string
+        amount:
+          type: number
+        status:
+          type: string
+          enum: [paid, outstanding]
+        issuedDate:
+          type: string
+          format: date
+        dueDate:
+          type: string
+          format: date
+        paidDate:
+          type: string
+          format: date
+          nullable: true
+      required: [id, invoiceNumber, orderId, orderNumber, clientId, clientName, amount, status, issuedDate, dueDate]
+
+    InvoiceDetail:
+      allOf:
+        - $ref: "#/components/schemas/Invoice"
+        - type: object
+          properties:
+            order:
+              $ref: "#/components/schemas/Order"
+          required: [order]
+
+    UpdateInvoiceStatusBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [paid, outstanding]
+      required: [status]
+
+    DashboardSummary:
+      type: object
+      properties:
+        fleet:
+          type: object
+          properties:
+            total:
+              type: integer
+            available:
+              type: integer
+            booked:
+              type: integer
+            maintenance:
+              type: integer
+            utilizationPercent:
+              type: number
+          required: [total, available, booked, maintenance, utilizationPercent]
+        revenue:
+          type: object
+          properties:
+            activeOrdersValue:
+              type: number
+            paidThisMonth:
+              type: number
+            outstanding:
+              type: number
+            projectedThisMonth:
+              type: number
+          required: [activeOrdersValue, paidThisMonth, outstanding, projectedThisMonth]
+        orders:
+          type: object
+          properties:
+            draft:
+              type: integer
+            active:
+              type: integer
+            completed:
+              type: integer
+            cancelled:
+              type: integer
+          required: [draft, active, completed, cancelled]
+        drivers:
+          type: object
+          properties:
+            total:
+              type: integer
+            available:
+              type: integer
+            onTrip:
+              type: integer
+            offDuty:
+              type: integer
+          required: [total, available, onTrip, offDuty]
+        clients:
+          type: object
+          properties:
+            total:
+              type: integer
+          required: [total]
+        revenueByCategory:
+          type: array
+          items:
+            type: object
+            properties:
+              category:
+                type: string
+              revenue:
+                type: number
+              orderCount:
+                type: integer
+            required: [category, revenue, orderCount]
+        ordersByMonth:
+          type: array
+          items:
+            type: object
+            properties:
+              month:
+                type: string
+              orders:
+                type: integer
+              revenue:
+                type: number
+            required: [month, orders, revenue]
+      required: [fleet, revenue, orders, drivers, clients, revenueByCategory, ordersByMonth]
+
+    MaintenanceAlert:
+      type: object
+      properties:
+        vehicleId:
+          type: integer
+        plateNumber:
+          type: string
+        model:
+          type: string
+        category:
+          type: string
+        maintenanceCompletionDate:
+          type: string
+          format: date
+        daysRemaining:
+          type: integer
+          description: Negative if past due
+        severity:
+          type: string
+          enum: [overdue, urgent, upcoming]
+        note:
+          type: string
+          nullable: true
+      required: [vehicleId, plateNumber, model, category, maintenanceCompletionDate, daysRemaining, severity]
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [order_created, order_completed, invoice_paid, vehicle_maintenance]
+        title:
+          type: string
+        subtitle:
+          type: string
+        entityId:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+      required: [id, type, title, subtitle, entityId, timestamp]
+
+    SearchResults:
+      type: object
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        vehicles:
+          type: array
+          items:
+            $ref: "#/components/schemas/Vehicle"
+        clients:
+          type: array
+          items:
+            $ref: "#/components/schemas/Client"
+        drivers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Driver"
+      required: [orders, vehicles, clients, drivers]

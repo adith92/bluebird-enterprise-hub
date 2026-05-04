@@ -3,8 +3,9 @@ import { LayoutDashboard, ShoppingCart, Car, UserCircle, Wallet, Users, Menu } f
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useAuth, ROLE_NAV_ITEMS } from "@/hooks/use-auth";
 
-export const NAV_ITEMS = [
+export const ALL_NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/sales", label: "Sales", icon: ShoppingCart, exact: false },
   { href: "/operations", label: "Fleet", icon: Car, exact: false },
@@ -13,17 +14,27 @@ export const NAV_ITEMS = [
   { href: "/clients", label: "Clients", icon: Users, exact: false },
 ];
 
-function isActive(location: string, item: (typeof NAV_ITEMS)[0]): boolean {
+function useNavItems() {
+  const { user } = useAuth();
+  if (!user) return ALL_NAV_ITEMS;
+  const allowed = ROLE_NAV_ITEMS[user.role];
+  return ALL_NAV_ITEMS.filter((item) => allowed.includes(item.href));
+}
+
+function isActive(location: string, item: (typeof ALL_NAV_ITEMS)[0]): boolean {
   if (item.exact) return location === item.href;
-  // Don't let /operations match /operations/drivers
   if (item.href === "/operations") {
-    return location === "/operations" || (location.startsWith("/operations") && !location.startsWith("/operations/drivers"));
+    return (
+      location === "/operations" ||
+      (location.startsWith("/operations") && !location.startsWith("/operations/drivers"))
+    );
   }
   return location === item.href || location.startsWith(item.href + "/");
 }
 
 export function Sidebar() {
   const [location] = useLocation();
+  const navItems = useNavItems();
 
   return (
     <div className="hidden border-r bg-sidebar md:block md:w-64 lg:w-72 shrink-0">
@@ -34,7 +45,7 @@ export function Sidebar() {
         </div>
       </div>
       <nav className="flex flex-col gap-1 p-4">
-        {NAV_ITEMS.map((item) => (
+        {navItems.map((item) => (
           <Link key={item.href} href={item.href}>
             <div
               className={cn(
@@ -56,6 +67,7 @@ export function Sidebar() {
 
 export function MobileNav() {
   const [location] = useLocation();
+  const navItems = useNavItems();
 
   return (
     <Sheet>
@@ -73,7 +85,7 @@ export function MobileNav() {
           </div>
         </div>
         <nav className="flex flex-col gap-1 p-4">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <Link key={item.href} href={item.href}>
               <div
                 className={cn(
@@ -96,13 +108,11 @@ export function MobileNav() {
 
 export function BottomNav() {
   const [location] = useLocation();
-
-  // Only show 5 most important items in bottom nav (space-constrained)
-  const bottomItems = NAV_ITEMS.slice(0, 5);
+  const navItems = useNavItems().slice(0, 5);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden border-t bg-background h-16">
-      {bottomItems.map((item) => {
+      {navItems.map((item) => {
         const active = isActive(location, item);
         return (
           <Link key={item.href} href={item.href} className="flex-1">

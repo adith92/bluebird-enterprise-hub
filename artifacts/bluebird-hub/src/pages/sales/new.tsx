@@ -12,6 +12,7 @@ import {
   useListAvailableVehicles,
   useCreateOrder,
   getListOrdersQueryKey,
+  getListAvailableVehiclesQueryKey,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -78,14 +79,17 @@ export default function CreateOrder() {
   const endDate = form.watch("endDate");
   const isDateSelected = startDate && endDate && endDate >= startDate;
 
+  const vehicleParams = {
+    startDate: isDateSelected ? startDate.toISOString() : "",
+    endDate: isDateSelected ? endDate.toISOString() : "",
+  };
   const { data: availableVehicles, isLoading: isVehiclesLoading } =
-    useListAvailableVehicles(
-      {
-        startDate: isDateSelected ? startDate.toISOString() : "",
-        endDate: isDateSelected ? endDate.toISOString() : "",
+    useListAvailableVehicles(vehicleParams, {
+      query: {
+        enabled: !!isDateSelected,
+        queryKey: getListAvailableVehiclesQueryKey(vehicleParams),
       },
-      { query: { enabled: !!isDateSelected } }
-    );
+    });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {

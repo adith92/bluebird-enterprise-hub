@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, User, Bell } from "lucide-react";
+import { Search, Bell, LogOut, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "./Sidebar";
 import {
@@ -11,11 +11,31 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { useGlobalSearch } from "@workspace/api-client-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useGlobalSearch, getGlobalSearchQueryKey } from "@workspace/api-client-react";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useAuth, ROLE_LABELS } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+
+const ROLE_COLORS: Record<string, string> = {
+  gm:         "bg-blue-100 text-blue-800",
+  sales:      "bg-emerald-100 text-emerald-800",
+  operations: "bg-amber-100 text-amber-800",
+  finance:    "bg-purple-100 text-purple-800",
+};
 
 export function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -27,6 +47,12 @@ export function Header() {
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
   }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    setLocation("/login");
+    toast({ title: "Signed out successfully" });
+  };
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b bg-background px-4 md:px-6">
@@ -57,14 +83,47 @@ export function Header() {
           <span className="sr-only">Search</span>
         </Button>
       </div>
+
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" className="text-muted-foreground">
           <Bell className="h-5 w-5" />
         </Button>
-        <Button variant="ghost" size="icon" className="rounded-full bg-muted">
-          <User className="h-5 w-5" />
-        </Button>
+
+        {user && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-2 h-9 px-3 rounded-full">
+                <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold shrink-0">
+                  {user.displayName.charAt(0).toUpperCase()}
+                </div>
+                <div className="hidden sm:flex flex-col items-start leading-none">
+                  <span className="text-xs font-medium">{user.displayName}</span>
+                  <span
+                    className={`text-[10px] font-semibold px-1 rounded ${ROLE_COLORS[user.role] ?? ""}`}
+                  >
+                    {ROLE_LABELS[user.role]}
+                  </span>
+                </div>
+                <ChevronDown className="h-3 w-3 text-muted-foreground hidden sm:block" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">{user.displayName}</p>
+                  <p className="text-xs text-muted-foreground">@{user.username}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive cursor-pointer">
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
+
       <GlobalSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
     </header>
   );
@@ -83,7 +142,7 @@ function GlobalSearchDialog({
 
   const { data: results, isLoading } = useGlobalSearch(
     { q: debouncedQuery },
-    { query: { enabled: debouncedQuery.length > 1 } }
+    { query: { enabled: debouncedQuery.length > 1, queryKey: getGlobalSearchQueryKey({ q: debouncedQuery }) } }
   );
 
   const handleSelect = (href: string) => {
@@ -117,9 +176,7 @@ function GlobalSearchDialog({
                 onSelect={() => handleSelect(`/sales/${order.id}`)}
               >
                 <span className="font-medium">{order.orderNumber}</span>
-                <span className="ml-2 text-muted-foreground">
-                  — {order.clientName}
-                </span>
+                <span className="ml-2 text-muted-foreground">— {order.clientName}</span>
               </CommandItem>
             ))}
           </CommandGroup>
@@ -130,16 +187,10 @@ function GlobalSearchDialog({
             {results.vehicles.map((vehicle) => (
               <CommandItem
                 key={`vehicle-${vehicle.id}`}
-                onSelect={() =>
-                  handleSelect(`/operations/vehicles/${vehicle.id}`)
-                }
+                onSelect={() => handleSelect(`/operations/vehicles/${vehicle.id}`)}
               >
-                <span className="font-mono font-medium">
-                  {vehicle.plateNumber}
-                </span>
-                <span className="ml-2 text-muted-foreground">
-                  — {vehicle.model}
-                </span>
+                <span className="font-mono font-medium">{vehicle.plateNumber}</span>
+                <span className="ml-2 text-muted-foreground">— {vehicle.model}</span>
               </CommandItem>
             ))}
           </CommandGroup>
@@ -163,9 +214,7 @@ function GlobalSearchDialog({
             {results.drivers.map((driver) => (
               <CommandItem
                 key={`driver-${driver.id}`}
-                onSelect={() =>
-                  handleSelect(`/operations/drivers/${driver.id}`)
-                }
+                onSelect={() => handleSelect(`/operations/drivers/${driver.id}`)}
               >
                 {driver.name}
               </CommandItem>

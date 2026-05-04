@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth, ROLE_HOME } from "@/hooks/use-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,10 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Car, AlertCircle } from "lucide-react";
 
 const DEMO_ACCOUNTS = [
-  { username: "gm",         label: "General Manager",  desc: "All modules"             },
-  { username: "sales",      label: "Sales",            desc: "Sales & Clients"         },
-  { username: "operations", label: "Operations",       desc: "Fleet & Drivers"         },
-  { username: "finance",    label: "Finance",          desc: "Finance & Clients"       },
+  { username: "gm",         label: "General Manager",  desc: "All modules"       },
+  { username: "sales",      label: "Sales",            desc: "Sales & Clients"   },
+  { username: "operations", label: "Operations",       desc: "Fleet & Drivers"   },
+  { username: "finance",    label: "Finance",          desc: "Finance & Clients" },
 ];
 
 export default function Login() {
@@ -22,10 +22,11 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (user) {
-    setLocation(ROLE_HOME[user.role]);
-    return null;
-  }
+  useEffect(() => {
+    if (user) {
+      setLocation(ROLE_HOME[user.role]);
+    }
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,11 +34,6 @@ export default function Login() {
     setLoading(true);
     try {
       await login(username.trim(), password);
-      const updatedUser = await fetch(
-        `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/auth/me`,
-        { credentials: "include" }
-      ).then((r) => r.json());
-      setLocation(ROLE_HOME[updatedUser.role as keyof typeof ROLE_HOME] ?? "/");
     } catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.");
     } finally {
@@ -81,6 +77,7 @@ export default function Login() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   autoComplete="username"
+                  autoFocus
                   required
                 />
               </div>
@@ -118,7 +115,8 @@ export default function Login() {
               Demo Accounts
             </CardTitle>
             <CardDescription className="text-xs">
-              Password for all accounts: <span className="font-mono font-semibold">bluebird</span>
+              Password for all accounts:{" "}
+              <span className="font-mono font-semibold text-foreground">bluebird</span>
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-2">

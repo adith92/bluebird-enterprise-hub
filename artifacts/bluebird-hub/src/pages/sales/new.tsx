@@ -4,14 +4,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, ChevronLeft } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { 
-  useListClients, 
-  useListDrivers, 
+import {
+  useListClients,
+  useListDrivers,
   useListAvailableVehicles,
   useCreateOrder,
-  getListOrdersQueryKey
+  getListOrdersQueryKey,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -28,27 +28,32 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
-const formSchema = z.object({
-  clientId: z.string().min(1, "Client is required"),
-  startDate: z.date({
-    required_error: "Start date is required",
-  }),
-  endDate: z.date({
-    required_error: "End date is required",
-  }),
-  vehicleId: z.string().min(1, "Vehicle is required"),
-  driverId: z.string().min(1, "Driver is required"),
-  pickupLocation: z.string().min(1, "Pickup location is required"),
-  dropoffLocation: z.string().min(1, "Dropoff location is required"),
-  price: z.string().min(1, "Price is required"),
-  notes: z.string().optional(),
-}).refine(data => data.endDate >= data.startDate, {
-  message: "End date must be after start date",
-  path: ["endDate"],
-});
+const formSchema = z
+  .object({
+    clientId: z.string().min(1, "Client is required"),
+    startDate: z.date({ required_error: "Start date is required" }),
+    endDate: z.date({ required_error: "End date is required" }),
+    vehicleId: z.string().min(1, "Vehicle is required"),
+    driverId: z.string().min(1, "Driver is required"),
+    pickupLocation: z.string().min(1, "Pickup location is required"),
+    dropoffLocation: z.string().min(1, "Dropoff location is required"),
+    price: z.string().min(1, "Price is required"),
+    notes: z.string().optional(),
+  })
+  .refine((data) => data.endDate >= data.startDate, {
+    message: "End date must be after or equal to start date",
+    path: ["endDate"],
+  });
 
 export default function CreateOrder() {
   const [, setLocation] = useLocation();
@@ -71,16 +76,16 @@ export default function CreateOrder() {
 
   const startDate = form.watch("startDate");
   const endDate = form.watch("endDate");
-
   const isDateSelected = startDate && endDate && endDate >= startDate;
 
-  const { data: availableVehicles, isLoading: isVehiclesLoading } = useListAvailableVehicles(
-    { 
-      startDate: isDateSelected ? startDate.toISOString() : "", 
-      endDate: isDateSelected ? endDate.toISOString() : "" 
-    },
-    { query: { enabled: !!isDateSelected } }
-  );
+  const { data: availableVehicles, isLoading: isVehiclesLoading } =
+    useListAvailableVehicles(
+      {
+        startDate: isDateSelected ? startDate.toISOString() : "",
+        endDate: isDateSelected ? endDate.toISOString() : "",
+      },
+      { query: { enabled: !!isDateSelected } }
+    );
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
@@ -95,33 +100,33 @@ export default function CreateOrder() {
           dropoffLocation: values.dropoffLocation,
           price: parseInt(values.price, 10),
           notes: values.notes || undefined,
-        }
+        },
       });
-      
+
       queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey() });
       toast({ title: "Order created successfully" });
       setLocation(`/sales/${order.id}`);
-    } catch (error) {
-      toast({ 
-        title: "Failed to create order", 
+    } catch {
+      toast({
+        title: "Failed to create order",
         description: "Please check your input and try again.",
-        variant: "destructive" 
+        variant: "destructive",
       });
     }
   }
 
   return (
     <div className="flex flex-col gap-6 max-w-3xl mx-auto">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" asChild>
-          <Link href="/sales">
-            <ChevronLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">New Order</h1>
-          <p className="text-sm text-muted-foreground">Create a new corporate booking.</p>
-        </div>
+      <Breadcrumbs
+        items={[
+          { label: "Sales", href: "/sales" },
+          { label: "New Order" },
+        ]}
+      />
+
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">New Order</h1>
+        <p className="text-sm text-muted-foreground">Create a new corporate booking.</p>
       </div>
 
       <Card>
@@ -132,7 +137,6 @@ export default function CreateOrder() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              
               <FormField
                 control={form.control}
                 name="clientId"
@@ -169,13 +173,17 @@ export default function CreateOrder() {
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
-                              variant={"outline"}
+                              variant="outline"
                               className={cn(
                                 "pl-3 text-left font-normal",
                                 !field.value && "text-muted-foreground"
                               )}
                             >
-                              {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
                           </FormControl>
@@ -185,7 +193,9 @@ export default function CreateOrder() {
                             mode="single"
                             selected={field.value}
                             onSelect={field.onChange}
-                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                            disabled={(date) =>
+                              date < new Date(new Date().setHours(0, 0, 0, 0))
+                            }
                             initialFocus
                           />
                         </PopoverContent>
@@ -205,13 +215,17 @@ export default function CreateOrder() {
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
-                              variant={"outline"}
+                              variant="outline"
                               className={cn(
                                 "pl-3 text-left font-normal",
                                 !field.value && "text-muted-foreground"
                               )}
                             >
-                              {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
                           </FormControl>
@@ -221,7 +235,11 @@ export default function CreateOrder() {
                             mode="single"
                             selected={field.value}
                             onSelect={field.onChange}
-                            disabled={(date) => startDate ? date < startDate : date < new Date(new Date().setHours(0, 0, 0, 0))}
+                            disabled={(date) =>
+                              startDate
+                                ? date < startDate
+                                : date < new Date(new Date().setHours(0, 0, 0, 0))
+                            }
                             initialFocus
                           />
                         </PopoverContent>
@@ -239,21 +257,36 @@ export default function CreateOrder() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Vehicle</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!isDateSelected}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        disabled={!isDateSelected}
+                      >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder={!isDateSelected ? "Select dates first" : "Select a vehicle"} />
+                            <SelectValue
+                              placeholder={
+                                !isDateSelected
+                                  ? "Select dates first"
+                                  : "Select a vehicle"
+                              }
+                            />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {isVehiclesLoading ? (
-                            <SelectItem value="loading" disabled>Loading available vehicles...</SelectItem>
+                            <SelectItem value="loading" disabled>
+                              Loading available vehicles...
+                            </SelectItem>
                           ) : availableVehicles?.length === 0 ? (
-                            <SelectItem value="none" disabled>No vehicles available</SelectItem>
+                            <SelectItem value="none" disabled>
+                              No vehicles available
+                            </SelectItem>
                           ) : (
                             availableVehicles?.map((v) => (
                               <SelectItem key={v.id} value={v.id.toString()}>
-                                {v.plateNumber} - {v.model}
+                                {v.plateNumber} — {v.model} (Rp{" "}
+                                {v.dailyRate.toLocaleString("id-ID")}/day)
                               </SelectItem>
                             ))
                           )}
@@ -279,7 +312,7 @@ export default function CreateOrder() {
                         <SelectContent>
                           {drivers?.map((driver) => (
                             <SelectItem key={driver.id} value={driver.id.toString()}>
-                              {driver.name}
+                              {driver.name} — {driver.status === "available" ? "Available" : driver.status === "on_trip" ? "On Trip" : "Off Duty"}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -312,7 +345,10 @@ export default function CreateOrder() {
                     <FormItem>
                       <FormLabel>Dropoff Location</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Sudirman Central Business District" {...field} />
+                        <Input
+                          placeholder="e.g. Sudirman Central Business District"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -349,7 +385,11 @@ export default function CreateOrder() {
               />
 
               <div className="flex justify-end gap-4">
-                <Button variant="outline" type="button" onClick={() => setLocation("/sales")}>
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => setLocation("/sales")}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={createOrder.isPending}>

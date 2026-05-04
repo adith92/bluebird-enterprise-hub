@@ -1,11 +1,11 @@
 import { Link, useParams } from "wouter";
 import { useGetOrder, useUpdateOrderStatus, getGetOrderQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, formatDateTime } from "@/lib/utils";
-import { ChevronLeft, FileText, User, Car, ArrowRight } from "lucide-react";
+import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
+import { FileText, User, Car, ArrowRight } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { UpdateOrderStatusBodyStatus } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
@@ -22,7 +23,7 @@ export default function OrderDetail() {
   const queryClient = useQueryClient();
 
   const { data: order, isLoading } = useGetOrder(Number(id), {
-    query: { enabled: !!id, queryKey: getGetOrderQueryKey(Number(id)) }
+    query: { enabled: !!id, queryKey: getGetOrderQueryKey(Number(id)) },
   });
 
   const updateStatus = useUpdateOrderStatus();
@@ -32,57 +33,72 @@ export default function OrderDetail() {
       await updateStatus.mutateAsync({ id: Number(id), data: { status: newStatus } });
       queryClient.invalidateQueries({ queryKey: getGetOrderQueryKey(Number(id)) });
       toast({ title: "Status updated" });
-    } catch (error) {
+    } catch {
       toast({ title: "Failed to update status", variant: "destructive" });
     }
   };
 
   if (isLoading) {
-    return <div className="flex h-full items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
+    return (
+      <div className="flex h-full items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
   }
 
   if (!order) return <div>Order not found</div>;
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl mx-auto">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" asChild>
-          <Link href="/sales">
-            <ChevronLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
+      <Breadcrumbs
+        items={[
+          { label: "Sales", href: "/sales" },
+          { label: order.orderNumber },
+        ]}
+      />
+
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-bold tracking-tight">{order.orderNumber}</h1>
-            <Badge 
+            <Badge
               variant={
-                order.status === "active" ? "default" :
-                order.status === "completed" ? "secondary" :
-                order.status === "cancelled" ? "destructive" : "outline"
+                order.status === "active"
+                  ? "default"
+                  : order.status === "completed"
+                  ? "secondary"
+                  : order.status === "cancelled"
+                  ? "destructive"
+                  : "outline"
               }
+              className={order.status === "completed" ? "bg-green-100 text-green-800" : ""}
             >
               {order.status}
             </Badge>
           </div>
-          <p className="text-sm text-muted-foreground">Created on {formatDateTime(order.createdAt)}</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Created on {formatDateTime(order.createdAt)}
+          </p>
         </div>
-        <div>
-          <Select 
-            value={order.status} 
-            onValueChange={(v) => handleStatusChange(v as UpdateOrderStatusBodyStatus)}
-            disabled={updateStatus.isPending || order.status === "cancelled" || order.status === "completed"}
-          >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Update Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <Select
+          value={order.status}
+          onValueChange={(v) => handleStatusChange(v as UpdateOrderStatusBodyStatus)}
+          disabled={
+            updateStatus.isPending ||
+            order.status === "cancelled" ||
+            order.status === "completed"
+          }
+        >
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Update Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="draft">Draft</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -96,7 +112,10 @@ export default function OrderDetail() {
           <CardContent className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground mb-1">Client</p>
-              <Link href={`/clients/${order.clientId}`} className="text-base font-medium text-primary hover:underline">
+              <Link
+                href={`/clients/${order.clientId}`}
+                className="text-base font-medium text-primary hover:underline"
+              >
                 {order.clientName}
               </Link>
             </div>
@@ -123,13 +142,19 @@ export default function OrderDetail() {
           <CardContent className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground mb-1">Vehicle</p>
-              <Link href={`/operations/vehicles/${order.vehicleId}`} className="text-base font-medium text-primary hover:underline">
+              <Link
+                href={`/operations/vehicles/${order.vehicleId}`}
+                className="text-base font-medium text-primary hover:underline font-mono"
+              >
                 {order.vehiclePlate}
               </Link>
             </div>
             <div>
               <p className="text-sm text-muted-foreground mb-1">Assigned Driver</p>
-              <Link href={`/operations/drivers/${order.driverId}`} className="text-base font-medium text-primary hover:underline">
+              <Link
+                href={`/operations/drivers/${order.driverId}`}
+                className="text-base font-medium text-primary hover:underline"
+              >
                 {order.driverName}
               </Link>
             </div>
@@ -144,13 +169,13 @@ export default function OrderDetail() {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-muted/50 p-4 rounded-lg">
               <div className="flex-1 space-y-1 w-full text-center md:text-left">
                 <p className="text-sm text-muted-foreground">From</p>
-                <p className="font-medium">{formatDateTime(order.startDate)}</p>
+                <p className="font-medium">{formatDate(order.startDate)}</p>
                 <p className="text-sm font-semibold">{order.pickupLocation}</p>
               </div>
               <ArrowRight className="hidden md:block h-6 w-6 text-muted-foreground flex-shrink-0" />
               <div className="flex-1 space-y-1 w-full text-center md:text-right">
                 <p className="text-sm text-muted-foreground">To</p>
-                <p className="font-medium">{formatDateTime(order.endDate)}</p>
+                <p className="font-medium">{formatDate(order.endDate)}</p>
                 <p className="text-sm font-semibold">{order.dropoffLocation}</p>
               </div>
             </div>
@@ -168,14 +193,26 @@ export default function OrderDetail() {
             <CardContent>
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
-                  <Link href={`/finance/invoices/${order.invoice.id}`} className="font-medium hover:underline flex items-center gap-2">
+                  <Link
+                    href={`/finance/invoices/${order.invoice.id}`}
+                    className="font-medium hover:underline flex items-center gap-2 text-primary"
+                  >
                     {order.invoice.invoiceNumber}
                   </Link>
-                  <p className="text-sm text-muted-foreground mt-1">Due on {formatDateTime(order.invoice.dueDate)}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Due on {formatDate(order.invoice.dueDate)}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="font-medium mb-1">{formatCurrency(order.invoice.amount)}</p>
-                  <Badge variant={order.invoice.status === "paid" ? "secondary" : "outline"} className={order.invoice.status === "paid" ? "bg-green-100 text-green-800" : "text-amber-600 border-amber-200 bg-amber-50"}>
+                  <Badge
+                    variant={order.invoice.status === "paid" ? "secondary" : "outline"}
+                    className={
+                      order.invoice.status === "paid"
+                        ? "bg-green-100 text-green-800"
+                        : "text-amber-600 border-amber-200 bg-amber-50"
+                    }
+                  >
                     {order.invoice.status}
                   </Badge>
                 </div>

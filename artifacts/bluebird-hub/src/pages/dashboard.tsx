@@ -46,7 +46,7 @@ export default function Dashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{summary.fleet.utilizationPercent}%</div>
             <p className="text-xs text-muted-foreground">
-              {summary.fleet.active} active / {summary.fleet.total} total
+              {summary.fleet.booked} booked / {summary.fleet.total} total
             </p>
           </CardContent>
         </Card>

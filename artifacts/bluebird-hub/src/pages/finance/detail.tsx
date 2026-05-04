@@ -1,13 +1,18 @@
 import { Link, useParams } from "wouter";
-import { useGetInvoice, useUpdateInvoiceStatus, getGetInvoiceQueryKey } from "@workspace/api-client-react";
+import {
+  useGetInvoice,
+  useUpdateInvoiceStatus,
+  getGetInvoiceQueryKey,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { ChevronLeft, ReceiptText, Building2, Calendar, CheckCircle } from "lucide-react";
+import { ReceiptText, Building2, Calendar, CheckCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 export default function InvoiceDetail() {
   const { id } = useParams<{ id: string }>();
@@ -15,7 +20,7 @@ export default function InvoiceDetail() {
   const queryClient = useQueryClient();
 
   const { data: invoice, isLoading } = useGetInvoice(Number(id), {
-    query: { enabled: !!id, queryKey: getGetInvoiceQueryKey(Number(id)) }
+    query: { enabled: !!id, queryKey: getGetInvoiceQueryKey(Number(id)) },
   });
 
   const updateStatus = useUpdateInvoiceStatus();
@@ -25,37 +30,64 @@ export default function InvoiceDetail() {
       await updateStatus.mutateAsync({ id: Number(id), data: { status: "paid" } });
       queryClient.invalidateQueries({ queryKey: getGetInvoiceQueryKey(Number(id)) });
       toast({ title: "Invoice marked as paid" });
-    } catch (error) {
+    } catch {
       toast({ title: "Failed to update status", variant: "destructive" });
     }
   };
 
   if (isLoading) {
-    return <div className="flex h-full items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
+    return (
+      <div className="flex h-full items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
   }
 
   if (!invoice) return <div>Invoice not found</div>;
 
-  const isOverdue = invoice.status === "outstanding" && new Date(invoice.dueDate) < new Date();
+  const isOverdue =
+    invoice.status === "outstanding" && new Date(invoice.dueDate) < new Date();
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl mx-auto">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" asChild>
-          <Link href="/finance">
-            <ChevronLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight">Invoice {invoice.invoiceNumber}</h1>
-            <Badge 
-              variant={invoice.status === "paid" ? "secondary" : isOverdue ? "destructive" : "outline"}
-              className={invoice.status === "paid" ? "bg-green-100 text-green-800" : invoice.status === "outstanding" && !isOverdue ? "text-amber-600 border-amber-200 bg-amber-50" : ""}
+      <Breadcrumbs
+        items={[
+          { label: "Finance", href: "/finance" },
+          { label: invoice.invoiceNumber },
+        ]}
+      />
+
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl font-bold tracking-tight">
+              Invoice {invoice.invoiceNumber}
+            </h1>
+            <Badge
+              variant={
+                invoice.status === "paid"
+                  ? "secondary"
+                  : isOverdue
+                  ? "destructive"
+                  : "outline"
+              }
+              className={
+                invoice.status === "paid"
+                  ? "bg-green-100 text-green-800"
+                  : invoice.status === "outstanding" && !isOverdue
+                  ? "text-amber-600 border-amber-200 bg-amber-50"
+                  : ""
+              }
             >
               {isOverdue ? "Overdue" : invoice.status}
             </Badge>
           </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            For order{" "}
+            <Link href={`/sales/${invoice.orderId}`} className="text-primary hover:underline">
+              {invoice.orderNumber}
+            </Link>
+          </p>
         </div>
         {invoice.status === "outstanding" && (
           <Button onClick={handleMarkAsPaid} disabled={updateStatus.isPending}>
@@ -77,12 +109,17 @@ export default function InvoiceDetail() {
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-1">Billed To</p>
-                <Link href={`/clients/${invoice.clientId}`} className="text-lg font-semibold text-primary hover:underline">
+                <Link
+                  href={`/clients/${invoice.clientId}`}
+                  className="text-lg font-semibold text-primary hover:underline"
+                >
                   {invoice.clientName}
                 </Link>
               </div>
               <div className="text-right">
-                <p className="text-sm font-medium text-muted-foreground mb-1">Total Amount</p>
+                <p className="text-sm font-medium text-muted-foreground mb-1">
+                  Total Amount
+                </p>
                 <p className="text-2xl font-bold">{formatCurrency(invoice.amount)}</p>
               </div>
             </div>
@@ -109,7 +146,9 @@ export default function InvoiceDetail() {
                   <p className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
                     <CheckCircle className="h-3 w-3 text-green-500" /> Paid Date
                   </p>
-                  <p className="font-medium text-green-700">{formatDate(invoice.paidDate)}</p>
+                  <p className="font-medium text-green-700">
+                    {formatDate(invoice.paidDate)}
+                  </p>
                 </div>
               )}
             </div>
@@ -126,7 +165,10 @@ export default function InvoiceDetail() {
           <CardContent className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground mb-1">Order Number</p>
-              <Link href={`/sales/${invoice.orderId}`} className="text-base font-medium text-primary hover:underline">
+              <Link
+                href={`/sales/${invoice.orderId}`}
+                className="text-base font-medium text-primary hover:underline"
+              >
                 {invoice.orderNumber}
               </Link>
             </div>
@@ -135,17 +177,29 @@ export default function InvoiceDetail() {
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Service Period</p>
                   <p className="text-sm">
-                    {formatDate(invoice.order.startDate)} - {formatDate(invoice.order.endDate)}
+                    {formatDate(invoice.order.startDate)} – {formatDate(invoice.order.endDate)}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Vehicle</p>
-                  <Link href={`/operations/vehicles/${invoice.order.vehicleId}`} className="text-sm hover:underline">
+                  <Link
+                    href={`/operations/vehicles/${invoice.order.vehicleId}`}
+                    className="text-sm hover:underline font-mono font-medium text-primary"
+                  >
                     {invoice.order.vehiclePlate}
                   </Link>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Status</p>
+                  <p className="text-sm text-muted-foreground mb-1">Driver</p>
+                  <Link
+                    href={`/operations/drivers/${invoice.order.driverId}`}
+                    className="text-sm hover:underline text-primary"
+                  >
+                    {invoice.order.driverName}
+                  </Link>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Order Status</p>
                   <Badge variant="outline">{invoice.order.status}</Badge>
                 </div>
               </>

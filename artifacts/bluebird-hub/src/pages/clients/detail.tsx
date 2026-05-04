@@ -2,48 +2,62 @@ import { Link, useParams } from "wouter";
 import { useGetClient, getGetClientQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { ChevronLeft, Building2, MapPin, Mail, Phone, ReceiptText, FileText } from "lucide-react";
+import { Building2, MapPin, Mail, Phone, ReceiptText, FileText } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
 
   const { data: client, isLoading } = useGetClient(Number(id), {
-    query: { enabled: !!id, queryKey: getGetClientQueryKey(Number(id)) }
+    query: { enabled: !!id, queryKey: getGetClientQueryKey(Number(id)) },
   });
 
   if (isLoading) {
-    return <div className="flex h-full items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
+    return (
+      <div className="flex h-full items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
   }
 
   if (!client) return <div>Client not found</div>;
 
   return (
     <div className="flex flex-col gap-6 max-w-6xl mx-auto">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" asChild>
-          <Link href="/clients">
-            <ChevronLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
+      <Breadcrumbs
+        items={[
+          { label: "Clients", href: "/clients" },
+          { label: client.name },
+        ]}
+      />
+
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-bold tracking-tight">{client.name}</h1>
-            <Badge variant="outline" className="font-mono">{client.code}</Badge>
+            <Badge variant="outline" className="font-mono">
+              {client.code}
+            </Badge>
           </div>
-          <p className="text-sm text-muted-foreground">{client.industry} • Partner since {formatDate(client.createdAt)}</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {client.industry} · Partner since {formatDate(client.createdAt)}
+          </p>
         </div>
         <div className="flex gap-4 items-center bg-muted/50 px-4 py-2 rounded-lg">
           <div>
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Active Orders</p>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+              Active Orders
+            </p>
             <p className="text-xl font-bold">{client.activeOrders}</p>
           </div>
-          <div className="w-px h-8 bg-border"></div>
+          <div className="w-px h-8 bg-border" />
           <div>
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">LTV</p>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+              Lifetime Value
+            </p>
             <p className="text-xl font-bold">{formatCurrency(client.totalRevenue)}</p>
           </div>
         </div>
@@ -63,16 +77,20 @@ export default function ClientDetail() {
               <div className="space-y-3">
                 <p className="font-medium">{client.contactPerson}</p>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Mail className="h-4 w-4" />
-                  <a href={`mailto:${client.contactEmail}`} className="hover:text-primary">{client.contactEmail}</a>
+                  <Mail className="h-4 w-4 shrink-0" />
+                  <a href={`mailto:${client.contactEmail}`} className="hover:text-primary truncate">
+                    {client.contactEmail}
+                  </a>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Phone className="h-4 w-4" />
-                  <a href={`tel:${client.contactPhone}`} className="hover:text-primary">{client.contactPhone}</a>
+                  <Phone className="h-4 w-4 shrink-0" />
+                  <a href={`tel:${client.contactPhone}`} className="hover:text-primary">
+                    {client.contactPhone}
+                  </a>
                 </div>
               </div>
             </div>
-            
+
             <div className="pt-4 border-t">
               <p className="text-sm font-semibold mb-2">Billing Address</p>
               <div className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -86,14 +104,28 @@ export default function ClientDetail() {
         <Card className="md:col-span-2">
           <Tabs defaultValue="orders" className="w-full">
             <CardHeader className="pb-2 border-b">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <ReceiptText className="h-5 w-5 text-muted-foreground" />
                   History
                 </CardTitle>
                 <TabsList>
-                  <TabsTrigger value="orders">Orders</TabsTrigger>
-                  <TabsTrigger value="invoices">Invoices</TabsTrigger>
+                  <TabsTrigger value="orders">
+                    Orders
+                    {client.orders && client.orders.length > 0 && (
+                      <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs font-medium">
+                        {client.orders.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="invoices">
+                    Invoices
+                    {client.invoices && client.invoices.length > 0 && (
+                      <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs font-medium">
+                        {client.invoices.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
                 </TabsList>
               </div>
             </CardHeader>
@@ -114,19 +146,34 @@ export default function ClientDetail() {
                       {client.orders.map((order) => (
                         <TableRow key={order.id}>
                           <TableCell className="font-medium">
-                            <Link href={`/sales/${order.id}`} className="text-primary hover:underline">
+                            <Link
+                              href={`/sales/${order.id}`}
+                              className="text-primary hover:underline"
+                            >
                               {order.orderNumber}
                             </Link>
                           </TableCell>
                           <TableCell>
-                            <span className="text-sm">{formatDate(order.startDate)}<br/><span className="text-muted-foreground text-xs">to {formatDate(order.endDate)}</span></span>
+                            <span className="text-sm">
+                              {formatDate(order.startDate)}
+                              <br />
+                              <span className="text-muted-foreground text-xs">
+                                to {formatDate(order.endDate)}
+                              </span>
+                            </span>
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-col text-sm">
-                              <Link href={`/operations/vehicles/${order.vehicleId}`} className="font-medium hover:underline">
+                              <Link
+                                href={`/operations/vehicles/${order.vehicleId}`}
+                                className="font-mono font-medium hover:underline"
+                              >
                                 {order.vehiclePlate}
                               </Link>
-                              <Link href={`/operations/drivers/${order.driverId}`} className="text-muted-foreground hover:underline">
+                              <Link
+                                href={`/operations/drivers/${order.driverId}`}
+                                className="text-muted-foreground hover:underline"
+                              >
                                 {order.driverName}
                               </Link>
                             </div>
@@ -135,7 +182,22 @@ export default function ClientDetail() {
                             {formatCurrency(order.price)}
                           </TableCell>
                           <TableCell>
-                            <Badge variant={order.status === "active" ? "default" : order.status === "completed" ? "secondary" : order.status === "cancelled" ? "destructive" : "outline"} className={order.status === "completed" ? "bg-green-100 text-green-800" : ""}>
+                            <Badge
+                              variant={
+                                order.status === "active"
+                                  ? "default"
+                                  : order.status === "completed"
+                                  ? "secondary"
+                                  : order.status === "cancelled"
+                                  ? "destructive"
+                                  : "outline"
+                              }
+                              className={
+                                order.status === "completed"
+                                  ? "bg-green-100 text-green-800"
+                                  : ""
+                              }
+                            >
                               {order.status}
                             </Badge>
                           </TableCell>
@@ -149,7 +211,7 @@ export default function ClientDetail() {
                   </div>
                 )}
               </TabsContent>
-              
+
               <TabsContent value="invoices" className="m-0 border-none outline-none">
                 {client.invoices && client.invoices.length > 0 ? (
                   <Table>
@@ -166,20 +228,33 @@ export default function ClientDetail() {
                       {client.invoices.map((invoice) => (
                         <TableRow key={invoice.id}>
                           <TableCell className="font-medium">
-                            <Link href={`/finance/invoices/${invoice.id}`} className="text-primary hover:underline flex items-center gap-1">
+                            <Link
+                              href={`/finance/invoices/${invoice.id}`}
+                              className="text-primary hover:underline flex items-center gap-1"
+                            >
                               <FileText className="h-3 w-3" />
                               {invoice.invoiceNumber}
                             </Link>
                           </TableCell>
                           <TableCell>
-                            <Link href={`/sales/${invoice.orderId}`} className="hover:underline text-sm">
+                            <Link
+                              href={`/sales/${invoice.orderId}`}
+                              className="hover:underline text-sm"
+                            >
                               {invoice.orderNumber}
                             </Link>
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-col text-sm">
                               <span>{formatDate(invoice.issuedDate)}</span>
-                              <span className={new Date(invoice.dueDate) < new Date() && invoice.status === 'outstanding' ? "text-destructive text-xs font-medium" : "text-muted-foreground text-xs"}>
+                              <span
+                                className={
+                                  new Date(invoice.dueDate) < new Date() &&
+                                  invoice.status === "outstanding"
+                                    ? "text-destructive text-xs font-medium"
+                                    : "text-muted-foreground text-xs"
+                                }
+                              >
                                 Due {formatDate(invoice.dueDate)}
                               </span>
                             </div>
@@ -188,7 +263,14 @@ export default function ClientDetail() {
                             {formatCurrency(invoice.amount)}
                           </TableCell>
                           <TableCell>
-                            <Badge variant={invoice.status === "paid" ? "secondary" : "outline"} className={invoice.status === "paid" ? "bg-green-100 text-green-800" : "text-amber-600 border-amber-200 bg-amber-50"}>
+                            <Badge
+                              variant={invoice.status === "paid" ? "secondary" : "outline"}
+                              className={
+                                invoice.status === "paid"
+                                  ? "bg-green-100 text-green-800"
+                                  : "text-amber-600 border-amber-200 bg-amber-50"
+                              }
+                            >
                               {invoice.status}
                             </Badge>
                           </TableCell>

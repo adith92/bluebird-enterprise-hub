@@ -20,6 +20,7 @@ import InvoicesList from "@/pages/finance/index";
 import InvoiceDetail from "@/pages/finance/detail";
 import ClientsList from "@/pages/clients/index";
 import ClientDetail from "@/pages/clients/detail";
+import CreateClient from "@/pages/clients/new";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -104,6 +105,7 @@ function Router() {
                 <Route path="/finance" component={InvoicesList} />
                 <Route path="/finance/invoices/:id" component={InvoiceDetail} />
                 <Route path="/clients" component={ClientsList} />
+                <Route path="/clients/new" component={CreateClient} />
                 <Route path="/clients/:id" component={ClientDetail} />
                 <Route component={NotFound} />
               </Switch>

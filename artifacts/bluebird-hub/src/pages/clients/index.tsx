@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { useListClients } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -16,9 +16,11 @@ export default function ClientsList() {
           <h1 className="text-2xl font-bold tracking-tight">Corporate Clients</h1>
           <p className="text-sm text-muted-foreground">Manage enterprise partners and billing accounts.</p>
         </div>
-        <Button variant="outline" disabled>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Client
+        <Button asChild>
+          <Link href="/clients/new">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Client
+          </Link>
         </Button>
       </div>
 

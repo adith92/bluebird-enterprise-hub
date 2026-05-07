@@ -6,21 +6,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Car, AlertCircle } from "lucide-react";
+import { renderGoogleButton } from "@/lib/google-signin";
 
 const DEMO_ACCOUNTS = [
   { username: "gm",         label: "General Manager",  desc: "All modules"       },
   { username: "sales",      label: "Sales",            desc: "Sales & Clients"   },
   { username: "operations", label: "Operations",       desc: "Fleet & Drivers"   },
   { username: "finance",    label: "Finance",          desc: "Finance & Clients" },
+  { username: "admin",      label: "Admin",            desc: "Full access (demo)" },
 ];
 
 export default function Login() {
-  const { login, user } = useAuth();
+  const { login, loginWithGoogle, user } = useAuth();
   const [, setLocation] = useLocation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -43,9 +46,33 @@ export default function Login() {
 
   const fillDemo = (uname: string) => {
     setUsername(uname);
-    setPassword("bluebird");
+    setPassword(uname === "admin" ? "admin" : "bluebird");
     setError("");
   };
+
+  useEffect(() => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+    if (!clientId) return;
+
+    const el = document.getElementById("google-signin-button");
+    if (!el) return;
+
+    try {
+      renderGoogleButton(el, clientId, async (idToken) => {
+        setError("");
+        setGoogleLoading(true);
+        try {
+          await loginWithGoogle(idToken);
+        } catch (err: any) {
+          setError(err.message || "Google sign-in failed.");
+        } finally {
+          setGoogleLoading(false);
+        }
+      });
+    } catch {
+      // If GSI script hasn't loaded yet, the user can still use password login.
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-muted/40 flex items-center justify-center p-4">
@@ -68,6 +95,12 @@ export default function Login() {
             <CardDescription>Enter your credentials to access the system.</CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="space-y-3 pb-4">
+              <div id="google-signin-button" className="w-full flex justify-center" aria-label="Continue with Google" />
+              <p className="text-xs text-muted-foreground text-center">
+                {googleLoading ? "Signing in with Google..." : "Or sign in with username & password"}
+              </p>
+            </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
@@ -115,8 +148,10 @@ export default function Login() {
               Demo Accounts
             </CardTitle>
             <CardDescription className="text-xs">
-              Password for all accounts:{" "}
-              <span className="font-mono font-semibold text-foreground">bluebird</span>
+              Password default:{" "}
+              <span className="font-mono font-semibold text-foreground">bluebird</span>{" "}
+              (admin uses{" "}
+              <span className="font-mono font-semibold text-foreground">admin</span>)
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-2">

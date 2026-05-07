@@ -13,15 +13,17 @@ interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+const API_BASE = ((import.meta.env.VITE_API_BASE_URL as string | undefined) || `${BASE}/api`).replace(/\/$/, "");
 
 async function apiFetch(path: string, options?: RequestInit) {
-  const res = await fetch(`${BASE}/api${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     ...options,
@@ -54,13 +56,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data);
   };
 
+  const loginWithGoogle = async (idToken: string) => {
+    const res = await apiFetch("/auth/google", {
+      method: "POST",
+      body: JSON.stringify({ idToken }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || "Google login failed");
+    }
+    const data: AuthUser = await res.json();
+    setUser(data);
+  };
+
   const logout = async () => {
     await apiFetch("/auth/logout", { method: "POST" });
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   );

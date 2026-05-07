@@ -7,6 +7,12 @@ const DEMO_USERS = [
   { username: "sales",      displayName: "Sales Team",       role: "sales"      as const, password: "bluebird" },
   { username: "operations", displayName: "Operations Team",  role: "operations" as const, password: "bluebird" },
   { username: "finance",    displayName: "Finance Team",     role: "finance"    as const, password: "bluebird" },
+  {
+    username: (process.env.DEMO_ADMIN_USERNAME || "admin").trim().toLowerCase(),
+    displayName: "Demo Admin",
+    role: "gm" as const,
+    password: process.env.DEMO_ADMIN_PASSWORD || "admin",
+  },
 ];
 
 export async function ensureDemoUsers(): Promise<void> {

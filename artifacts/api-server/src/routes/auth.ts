@@ -2,6 +2,11 @@ import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
+import { verifyGoogleIdToken } from "../lib/google-auth";
+
+function normalizeUsername(value: string) {
+  return value.trim().toLowerCase();
+}
 
 const router: IRouter = Router();
 
@@ -16,7 +21,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   const [user] = await db
     .select()
     .from(usersTable)
-    .where(eq(usersTable.username, username.trim().toLowerCase()))
+    .where(eq(usersTable.username, normalizeUsername(username)))
     .limit(1);
 
   if (!user) {
@@ -39,6 +44,52 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     displayName: user.displayName,
     role: user.role,
   });
+});
+
+router.post("/auth/google", async (req, res): Promise<void> => {
+  const { idToken } = req.body as { idToken?: string };
+  if (!idToken) {
+    res.status(400).json({ error: "idToken is required" });
+    return;
+  }
+
+  try {
+    const payload = await verifyGoogleIdToken(idToken);
+    const email = payload.email;
+    if (!email) {
+      res.status(401).json({ error: "Google account email is required" });
+      return;
+    }
+
+    const username = normalizeUsername(email.split("@")[0] || email);
+    const [existing] = await db.select().from(usersTable).where(eq(usersTable.username, username)).limit(1);
+
+    const user =
+      existing ??
+      (
+        await db
+          .insert(usersTable)
+          .values({
+            username,
+            displayName: payload.name || email,
+            role: "gm",
+            passwordHash: await bcrypt.hash(`google:${payload.sub}:${Date.now()}`, 10),
+          })
+          .returning()
+      )[0];
+
+    (req.session as any).userId = user.id;
+    (req.session as any).role = user.role;
+
+    res.json({
+      id: user.id,
+      username: user.username,
+      displayName: user.displayName,
+      role: user.role,
+    });
+  } catch (err: any) {
+    res.status(401).json({ error: err?.message || "Google login failed" });
+  }
 });
 
 router.post("/auth/logout", (req, res): void => {

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, ShoppingCart, Car, UserCircle, Wallet, Users, Menu } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Car, UserCircle, Wallet, Users, Menu, Kanban } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -10,6 +10,7 @@ export const ALL_NAV_ITEMS = [
   { href: "/sales", label: "Sales", icon: ShoppingCart, exact: false },
   { href: "/operations", label: "Fleet", icon: Car, exact: false },
   { href: "/operations/drivers", label: "Drivers", icon: UserCircle, exact: false },
+  { href: "/operations/dispatch", label: "Dispatch Board", icon: Kanban, exact: false },
   { href: "/finance", label: "Finance", icon: Wallet, exact: false },
   { href: "/clients", label: "Clients", icon: Users, exact: false },
 ];

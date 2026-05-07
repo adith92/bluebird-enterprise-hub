@@ -157,9 +157,9 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 export const ROLE_NAV_ITEMS: Record<UserRole, string[]> = {
-  gm: ["/", "/sales", "/operations", "/operations/drivers", "/finance", "/clients", "/clients/new"],
+  gm: ["/", "/sales", "/operations", "/operations/drivers", "/operations/dispatch", "/finance", "/clients", "/clients/new"],
   sales: ["/sales", "/clients", "/clients/new"],
-  operations: ["/operations", "/operations/drivers"],
+  operations: ["/operations", "/operations/drivers", "/operations/dispatch"],
   finance: ["/finance", "/clients", "/clients/new"],
 };
 

@@ -24,18 +24,46 @@ export default function Dashboard() {
   const { data: summary, isLoading: isSummaryLoading } = useGetDashboardSummary();
   const { data: alerts, isLoading: isAlertsLoading } = useGetMaintenanceAlerts();
   const { data: activity, isLoading: isActivityLoading } = useGetRecentActivity();
+  const demoMode = String(import.meta.env.VITE_DEMO_MODE || "").toLowerCase() === "true";
 
   if (isSummaryLoading || isAlertsLoading || isActivityLoading) {
     return <div className="flex h-full items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
   }
 
-  if (!summary) return <div>Failed to load dashboard</div>;
+  const defaultSummary = {
+    fleet: { utilizationPercent: 0, booked: 0, total: 0 },
+    revenue: { projectedThisMonth: 0, paidThisMonth: 0, outstanding: 0 },
+    clients: { total: 0 },
+    ordersByMonth: [] as Array<{ month: string; revenue: number }>,
+    revenueByCategory: [] as Array<{ category: string; revenue: number }>,
+  };
+
+  const safeSummary = {
+    ...defaultSummary,
+    ...(summary as any),
+    fleet: { ...defaultSummary.fleet, ...(summary as any)?.fleet },
+    revenue: { ...defaultSummary.revenue, ...(summary as any)?.revenue },
+    clients: { ...defaultSummary.clients, ...(summary as any)?.clients },
+    ordersByMonth: ((summary as any)?.ordersByMonth ?? defaultSummary.ordersByMonth) as typeof defaultSummary.ordersByMonth,
+    revenueByCategory: ((summary as any)?.revenueByCategory ?? defaultSummary.revenueByCategory) as typeof defaultSummary.revenueByCategory,
+  };
+
+  const safeAlerts = Array.isArray(alerts) ? alerts : [];
+  const safeActivity = Array.isArray(activity) ? activity : [];
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">GM Dashboard</h1>
       </div>
+
+      {!summary ? (
+        <div className="rounded-lg border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+          {demoMode
+            ? "Demo mode aktif: data dashboard belum tersambung ke API/Database."
+            : "Dashboard data belum bisa dimuat. Pastikan API sedang berjalan dan kamu sudah login."}
+        </div>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -44,9 +72,9 @@ export default function Dashboard() {
             <Car className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary.fleet.utilizationPercent}%</div>
+            <div className="text-2xl font-bold">{safeSummary.fleet.utilizationPercent}%</div>
             <p className="text-xs text-muted-foreground">
-              {summary.fleet.booked} booked / {summary.fleet.total} total
+              {safeSummary.fleet.booked} booked / {safeSummary.fleet.total} total
             </p>
           </CardContent>
         </Card>
@@ -56,9 +84,9 @@ export default function Dashboard() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(summary.revenue.projectedThisMonth)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(safeSummary.revenue.projectedThisMonth)}</div>
             <p className="text-xs text-muted-foreground">
-              {formatCurrency(summary.revenue.paidThisMonth)} paid this month
+              {formatCurrency(safeSummary.revenue.paidThisMonth)} paid this month
             </p>
           </CardContent>
         </Card>
@@ -68,7 +96,7 @@ export default function Dashboard() {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(summary.revenue.outstanding)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(safeSummary.revenue.outstanding)}</div>
             <p className="text-xs text-muted-foreground">
               Awaiting payment
             </p>
@@ -80,7 +108,7 @@ export default function Dashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary.clients.total}</div>
+            <div className="text-2xl font-bold">{safeSummary.clients.total}</div>
             <p className="text-xs text-muted-foreground">
               Corporate partners
             </p>
@@ -96,7 +124,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={summary.ordersByMonth}>
+              <LineChart data={safeSummary.ordersByMonth}>
                 <XAxis dataKey="month" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis 
                   stroke="#888888" 
@@ -122,7 +150,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={summary.revenueByCategory} layout="vertical" margin={{ left: 30 }}>
+              <BarChart data={safeSummary.revenueByCategory} layout="vertical" margin={{ left: 30 }}>
                 <XAxis type="number" hide />
                 <YAxis dataKey="category" type="category" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                 <Tooltip formatter={(value: number) => formatCurrency(value)} cursor={{ fill: 'transparent' }} />
@@ -140,9 +168,9 @@ export default function Dashboard() {
             <CardDescription>Vehicles requiring attention</CardDescription>
           </CardHeader>
           <CardContent>
-            {alerts && alerts.length > 0 ? (
+            {safeAlerts.length > 0 ? (
               <div className="space-y-4">
-                {alerts.map((alert) => (
+                {safeAlerts.map((alert) => (
                   <div key={alert.vehicleId} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
                     <div>
                       <div className="flex items-center gap-2">
@@ -178,9 +206,9 @@ export default function Dashboard() {
             <CardDescription>Latest system events</CardDescription>
           </CardHeader>
           <CardContent>
-            {activity && activity.length > 0 ? (
+            {safeActivity.length > 0 ? (
               <div className="space-y-4">
-                {activity.map((item) => (
+                {safeActivity.map((item) => (
                   <div key={item.id} className="flex items-start gap-4">
                     <div className="mt-1 rounded-full p-2 bg-muted">
                       {item.type === "order_created" && <Activity className="h-4 w-4 text-primary" />}

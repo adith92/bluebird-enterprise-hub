@@ -16,6 +16,7 @@ import VehiclesList from "@/pages/operations/vehicles/index";
 import VehicleDetail from "@/pages/operations/vehicles/detail";
 import DriversList from "@/pages/operations/drivers/index";
 import DriverDetail from "@/pages/operations/drivers/detail";
+import DispatchBoard from "@/pages/operations/dispatch";
 import InvoicesList from "@/pages/finance/index";
 import InvoiceDetail from "@/pages/finance/detail";
 import ClientsList from "@/pages/clients/index";
@@ -36,6 +37,7 @@ const ROUTE_TO_NAV: Record<string, string> = {
   "/sales": "/sales",
   "/operations": "/operations",
   "/operations/drivers": "/operations/drivers",
+  "/operations/dispatch": "/operations/dispatch",
   "/finance": "/finance",
   "/clients": "/clients",
 };
@@ -102,6 +104,7 @@ function Router() {
                 <Route path="/operations/vehicles/:id" component={VehicleDetail} />
                 <Route path="/operations/drivers" component={DriversList} />
                 <Route path="/operations/drivers/:id" component={DriverDetail} />
+                <Route path="/operations/dispatch" component={DispatchBoard} />
                 <Route path="/finance" component={InvoicesList} />
                 <Route path="/finance/invoices/:id" component={InvoiceDetail} />
                 <Route path="/clients" component={ClientsList} />

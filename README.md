@@ -75,6 +75,18 @@ Open the app:
 - 🌐 Web: `http://localhost:5173`
 - 🔌 API: `http://localhost:3001/api`
 
+## 🧪 Tests
+
+### ✅ E2E (Playwright)
+
+```bash
+pnpm run test:e2e
+```
+
+Notes:
+- 🧪 E2E runs the web app in `VITE_DEMO_MODE=true` by default (no DB required).
+- 🔧 If you already have the dev server running, Playwright will reuse it.
+
 ## 🔑 Demo Login
 
 ### 👤 Username/Password
@@ -148,4 +160,3 @@ Add a vercel.json if needed and document steps in README.
 ## 🧾 Changelog
 
 See [CHANGELOG.md](./CHANGELOG.md) 📌
-

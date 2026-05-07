@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and, ne, sql, inArray, desc } from "drizzle-orm";
+import { z } from "zod";
 import {
   db,
   ordersTable,
@@ -18,6 +19,16 @@ import {
 import { serializeOrder, serializeInvoice } from "../lib/serialize";
 
 const router: IRouter = Router();
+
+function requireRole(req: any, allowed: Array<"gm" | "operations">): boolean {
+  const role = req.session?.role as string | undefined;
+  return Boolean(role && allowed.includes(role as any));
+}
+
+const UpdateAssignmentBody = z.object({
+  vehicleId: z.number().int().positive().nullable(),
+  driverId: z.number().int().positive().nullable(),
+});
 
 async function nextOrderNumber(): Promise<string> {
   const year = new Date().getFullYear();
@@ -218,6 +229,105 @@ router.get("/orders/:id", async (req, res): Promise<void> => {
         )
       : null,
   });
+});
+
+router.patch("/orders/:id/assignment", async (req, res): Promise<void> => {
+  if (!requireRole(req, ["gm", "operations"])) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const params = GetOrderParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const parsed = UpdateAssignmentBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, params.data.id)).limit(1);
+  if (!order) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+  if (order.status === "completed" || order.status === "cancelled") {
+    res.status(409).json({ error: "Order cannot be assigned in its current status" });
+    return;
+  }
+
+  const start = order.startDate;
+  const end = order.endDate;
+
+  const vehicleId = parsed.data.vehicleId;
+  const driverId = parsed.data.driverId;
+
+  if (vehicleId) {
+    const [vehicle] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, vehicleId)).limit(1);
+    if (!vehicle) {
+      res.status(400).json({ error: "Vehicle not found" });
+      return;
+    }
+    if (vehicle.status === "maintenance") {
+      res.status(409).json({ error: "Vehicle is under maintenance" });
+      return;
+    }
+    const conflict = await db
+      .select({ id: ordersTable.id })
+      .from(ordersTable)
+      .where(
+        and(
+          eq(ordersTable.vehicleId, vehicleId),
+          ne(ordersTable.status, "cancelled"),
+          ne(ordersTable.id, order.id),
+          sql`${ordersTable.startDate} <= ${end}`,
+          sql`${ordersTable.endDate} >= ${start}`,
+        ),
+      );
+    if (conflict.length > 0) {
+      res.status(409).json({ error: "Vehicle is already booked during the selected dates" });
+      return;
+    }
+  }
+
+  if (driverId) {
+    const [driver] = await db.select().from(driversTable).where(eq(driversTable.id, driverId)).limit(1);
+    if (!driver) {
+      res.status(400).json({ error: "Driver not found" });
+      return;
+    }
+    if (driver.status === "off_duty") {
+      res.status(409).json({ error: "Driver is not available" });
+      return;
+    }
+    const conflict = await db
+      .select({ id: ordersTable.id })
+      .from(ordersTable)
+      .where(
+        and(
+          eq(ordersTable.driverId, driverId),
+          ne(ordersTable.status, "cancelled"),
+          ne(ordersTable.id, order.id),
+          sql`${ordersTable.startDate} <= ${end}`,
+          sql`${ordersTable.endDate} >= ${start}`,
+        ),
+      );
+    if (conflict.length > 0) {
+      res.status(409).json({ error: "Driver is already booked during the selected dates" });
+      return;
+    }
+  }
+
+  const [updated] = await db
+    .update(ordersTable)
+    .set({ vehicleId, driverId })
+    .where(eq(ordersTable.id, order.id))
+    .returning();
+
+  res.json(updated);
 });
 
 router.patch("/orders/:id", async (req, res): Promise<void> => {

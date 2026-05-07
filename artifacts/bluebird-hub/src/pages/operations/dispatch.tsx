@@ -74,10 +74,12 @@ function DraggableOrderCard({ order }: { order: DispatchOrder }) {
 
 function DroppableCard({
   id,
+  rootId,
   className,
   children,
 }: {
   id: string;
+  rootId?: string;
   className?: string;
   children: React.ReactNode;
 }) {
@@ -85,6 +87,7 @@ function DroppableCard({
   return (
     <div
       ref={setNodeRef}
+      id={rootId}
       className={`${className ?? ""} ${isOver ? "ring-2 ring-primary" : ""}`}
     >
       {children}
@@ -92,7 +95,7 @@ function DroppableCard({
   );
 }
 
-async function saveAssignment(orderId: number, vehicleId: number | null, driverId: number | null) {
+async function saveAssignment(orderId: number, vehicleId: number, driverId: number) {
   const res = await fetch(`/api/orders/${orderId}/assignment`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -136,6 +139,15 @@ export default function DispatchBoard() {
   async function persist(orderId: number, nextVehicleId: number | null, nextDriverId: number | null) {
     const previous = findOrder(orderId);
     if (!previous) return;
+
+    if (!nextVehicleId || !nextDriverId) {
+      toast({
+        variant: "destructive",
+        title: "Missing assignment",
+        description: "Select both a vehicle and a driver before saving.",
+      });
+      return;
+    }
 
     // Optimistic update
     setOrders((current) =>
@@ -256,10 +268,18 @@ export default function DispatchBoard() {
                     id={`vehicle:${v.id}`}
                     className={`rounded-md border bg-card p-3 ${activeVehicleId === v.id ? "ring-2 ring-primary" : ""}`}
                   >
-                    <div id={`vehicle-${v.id}`}>
+                    <button
+                      type="button"
+                      id={`vehicle-${v.id}`}
+                      className="w-full text-left"
+                      onClick={() => {
+                        setActiveVehicleId(v.id);
+                        toast({ title: "Vehicle selected", description: `${v.plateNumber} selected.` });
+                      }}
+                    >
                       <div className="font-medium">{v.plateNumber}</div>
                       <div className="text-xs text-muted-foreground">{v.model}</div>
-                    </div>
+                    </button>
                   </DroppableCard>
                 ))
               )}
@@ -284,10 +304,18 @@ export default function DispatchBoard() {
                     id={`driver:${d.id}`}
                     className={`rounded-md border bg-card p-3 ${activeDriverId === d.id ? "ring-2 ring-primary" : ""}`}
                   >
-                    <div id={`driver-${d.id}`}>
+                    <button
+                      type="button"
+                      id={`driver-${d.id}`}
+                      className="w-full text-left"
+                      onClick={() => {
+                        setActiveDriverId(d.id);
+                        toast({ title: "Driver selected", description: `${d.name} selected.` });
+                      }}
+                    >
                       <div className="font-medium">{d.name}</div>
                       <div className="text-xs text-muted-foreground">{d.status}</div>
-                    </div>
+                    </button>
                   </DroppableCard>
                 ))
               )}
@@ -305,15 +333,16 @@ export default function DispatchBoard() {
             <CardContent className="space-y-2">
               <DroppableCard
                 id={droppableIds.assigned}
+                rootId="dispatch-dropzone"
                 className="rounded-md border border-dashed p-3 text-xs text-muted-foreground"
               >
-                <div id="dispatch-dropzone">Drop an order here to save with selected vehicle & driver.</div>
+                <div>Drop an order here to save with selected vehicle & driver.</div>
               </DroppableCard>
               {assignedOrders.length === 0 ? (
                 <div className="text-sm text-muted-foreground">No assigned orders yet.</div>
               ) : (
                 assignedOrders.map((o) => (
-                  <div key={o.id} className="rounded-md border bg-card p-3">
+                  <div key={o.id} className="rounded-md border bg-card p-3" id={`assigned-order-${o.id}`}>
                     <div className="flex items-center justify-between">
                       <div className="font-medium">{o.orderNumber}</div>
                       <Badge>{o.status}</Badge>

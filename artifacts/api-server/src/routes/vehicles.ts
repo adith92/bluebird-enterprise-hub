@@ -16,10 +16,12 @@ import {
   UpdateVehicleStatusBody,
 } from "@workspace/api-zod";
 import { serializeVehicle, serializeOrder } from "../lib/serialize";
+import { requireAuth } from "../middleware/auth";
+import { asyncHandler } from "../middleware/async";
 
 const router: IRouter = Router();
 
-router.get("/vehicles", async (req, res): Promise<void> => {
+router.get("/vehicles", requireAuth, asyncHandler(async (req, res): Promise<void> => {
   const params = ListVehiclesQueryParams.safeParse(req.query);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -37,9 +39,9 @@ router.get("/vehicles", async (req, res): Promise<void> => {
     .orderBy(vehiclesTable.plateNumber);
 
   res.json(rows.map(serializeVehicle));
-});
+}));
 
-router.post("/vehicles", async (req, res): Promise<void> => {
+router.post("/vehicles", requireAuth, asyncHandler(async (req, res): Promise<void> => {
   const parsed = CreateVehicleBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -60,9 +62,9 @@ router.post("/vehicles", async (req, res): Promise<void> => {
   }
 
   res.status(201).json(serializeVehicle(v));
-});
+}));
 
-router.get("/vehicles/available", async (req, res): Promise<void> => {
+router.get("/vehicles/available", requireAuth, asyncHandler(async (req, res): Promise<void> => {
   // Coerce date strings before zod validation since the generated schema uses zod.date()
   const coerced = {
     ...req.query,
@@ -116,9 +118,9 @@ router.get("/vehicles/available", async (req, res): Promise<void> => {
     .orderBy(vehiclesTable.plateNumber);
 
   res.json(rows.map(serializeVehicle));
-});
+}));
 
-router.get("/vehicles/:id", async (req, res): Promise<void> => {
+router.get("/vehicles/:id", requireAuth, asyncHandler(async (req, res): Promise<void> => {
   const params = GetVehicleParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -166,9 +168,9 @@ router.get("/vehicles/:id", async (req, res): Promise<void> => {
       ),
     ),
   });
-});
+}));
 
-router.patch("/vehicles/:id", async (req, res): Promise<void> => {
+router.patch("/vehicles/:id", requireAuth, asyncHandler(async (req, res): Promise<void> => {
   const params = UpdateVehicleStatusParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -216,6 +218,6 @@ router.patch("/vehicles/:id", async (req, res): Promise<void> => {
   }
 
   res.json(serializeVehicle(v));
-});
+}));
 
 export default router;

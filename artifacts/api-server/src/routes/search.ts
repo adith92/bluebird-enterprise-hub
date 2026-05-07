@@ -14,10 +14,12 @@ import {
   serializeDriver,
   serializeOrder,
 } from "../lib/serialize";
+import { requireAuth } from "../middleware/auth";
+import { asyncHandler } from "../middleware/async";
 
 const router: IRouter = Router();
 
-router.get("/search", async (req, res): Promise<void> => {
+router.get("/search", requireAuth, asyncHandler(async (req, res): Promise<void> => {
   const params = GlobalSearchQueryParams.safeParse(req.query);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -100,6 +102,6 @@ router.get("/search", async (req, res): Promise<void> => {
     clients: clients.map((c) => serializeClient(c, 0, 0)),
     drivers: drivers.map(serializeDriver),
   });
-});
+}));
 
 export default router;

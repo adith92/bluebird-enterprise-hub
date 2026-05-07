@@ -48,14 +48,23 @@ test("dispatch board loads and allows demo assignment flow", async ({ page }) =>
   const order = page.locator("#order-101");
   await expect(order).toBeVisible();
 
-  // Drag order to vehicle, then driver, then save dropzone
-  await order.dragTo(page.locator("#vehicle-201"));
-  await order.dragTo(page.locator("#driver-301"));
-  await order.dragTo(page.locator("#dispatch-dropzone"));
+  // Select vehicle + driver, then drop on save zone
+  await page.locator("#vehicle-201").click();
+  await page.locator("#driver-301").click();
+  const from = await order.boundingBox();
+  const to = await page.locator("#dispatch-dropzone").boundingBox();
+  if (!from || !to) throw new Error("Missing drag bounding boxes");
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });
+  await page.mouse.up();
 
-  // Assigned section should reflect assignment
-  await expect(page.locator("text=Vehicle 201")).toBeVisible();
-  await expect(page.locator("text=Driver 301")).toBeVisible();
+  // Assigned card should reflect assignment
+  const assigned = page.locator("#assigned-order-101");
+  await expect(assigned).toBeVisible();
+  await expect(assigned).toContainText("BB-2026-0001");
+  await expect(assigned).toContainText("Vehicle 201");
+  await expect(assigned).toContainText("Driver 301");
 });
 
 test("dispatch board access is blocked for Sales role", async ({ page }) => {

@@ -17,17 +17,14 @@ import {
   UpdateOrderStatusBody,
 } from "@workspace/api-zod";
 import { serializeOrder, serializeInvoice } from "../lib/serialize";
+import { requireAuth, requireRole as requireRoleMw } from "../middleware/auth";
+import { asyncHandler } from "../middleware/async";
 
 const router: IRouter = Router();
 
-function requireRole(req: any, allowed: Array<"gm" | "operations">): boolean {
-  const role = req.session?.role as string | undefined;
-  return Boolean(role && allowed.includes(role as any));
-}
-
 const UpdateAssignmentBody = z.object({
-  vehicleId: z.number().int().positive().nullable(),
-  driverId: z.number().int().positive().nullable(),
+  vehicleId: z.number().int().positive(),
+  driverId: z.number().int().positive(),
 });
 
 async function nextOrderNumber(): Promise<string> {
@@ -48,7 +45,7 @@ async function nextInvoiceNumber(): Promise<string> {
   return `INV-${year}-${seq}`;
 }
 
-router.get("/orders", async (req, res): Promise<void> => {
+router.get("/orders", requireAuth, asyncHandler(async (req, res): Promise<void> => {
   const params = ListOrdersQueryParams.safeParse(req.query);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -83,9 +80,9 @@ router.get("/orders", async (req, res): Promise<void> => {
       ),
     ),
   );
-});
+}));
 
-router.post("/orders", async (req, res): Promise<void> => {
+router.post("/orders", requireAuth, asyncHandler(async (req, res): Promise<void> => {
   const parsed = CreateOrderBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -178,9 +175,9 @@ router.post("/orders", async (req, res): Promise<void> => {
         driver?.name ?? "—",
       ),
     );
-});
+}));
 
-router.get("/orders/:id", async (req, res): Promise<void> => {
+router.get("/orders/:id", requireAuth, asyncHandler(async (req, res): Promise<void> => {
   const params = GetOrderParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -229,13 +226,9 @@ router.get("/orders/:id", async (req, res): Promise<void> => {
         )
       : null,
   });
-});
+}));
 
-router.patch("/orders/:id/assignment", async (req, res): Promise<void> => {
-  if (!requireRole(req, ["gm", "operations"])) {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
+router.patch("/orders/:id/assignment", requireRoleMw(["gm", "operations"]), asyncHandler(async (req, res): Promise<void> => {
 
   const params = GetOrderParams.safeParse(req.params);
   if (!params.success) {
@@ -328,9 +321,9 @@ router.patch("/orders/:id/assignment", async (req, res): Promise<void> => {
     .returning();
 
   res.json(updated);
-});
+}));
 
-router.patch("/orders/:id", async (req, res): Promise<void> => {
+router.patch("/orders/:id", requireAuth, asyncHandler(async (req, res): Promise<void> => {
   const params = UpdateOrderStatusParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -438,7 +431,7 @@ router.patch("/orders/:id", async (req, res): Promise<void> => {
       driver?.name ?? "—",
     ),
   );
-});
+}));
 
 // Suppress unused-var warning when inArray isn't used here
 void inArray;

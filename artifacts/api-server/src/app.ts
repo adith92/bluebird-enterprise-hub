@@ -4,6 +4,7 @@ import session from "express-session";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { errorHandler, notFound } from "./middleware/errors";
 
 const app: Express = express();
 
@@ -44,7 +45,13 @@ app.use((req, _res, next) => {
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "bluebird-dev-secret",
+    secret:
+      process.env.SESSION_SECRET ||
+      (process.env.NODE_ENV === "production"
+        ? (() => {
+            throw new Error("SESSION_SECRET is required in production.");
+          })()
+        : "bluebird-dev-secret"),
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -57,5 +64,8 @@ app.use(
 );
 
 app.use("/api", router);
+
+app.use(notFound);
+app.use(errorHandler);
 
 export default app;

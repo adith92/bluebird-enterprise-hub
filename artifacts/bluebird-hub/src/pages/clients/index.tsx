@@ -8,6 +8,7 @@ import { Plus, Users } from "lucide-react";
 
 export default function ClientsList() {
   const { data: clients, isLoading } = useListClients();
+  const safeClients = Array.isArray(clients) ? clients : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -46,7 +47,7 @@ export default function ClientsList() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ) : !clients || clients.length === 0 ? (
+                ) : safeClients.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                       <div className="flex flex-col items-center justify-center gap-2">
@@ -56,7 +57,7 @@ export default function ClientsList() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  clients.map((client) => (
+                  safeClients.map((client) => (
                     <TableRow key={client.id}>
                       <TableCell className="font-medium">
                         <div className="flex flex-col">

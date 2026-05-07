@@ -15,6 +15,7 @@ export default function InvoicesList() {
   const { data: invoices, isLoading } = useListInvoices(
     statusFilter === "all" ? {} : { status: statusFilter }
   );
+  const safeInvoices = Array.isArray(invoices) ? invoices : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -57,7 +58,7 @@ export default function InvoicesList() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ) : !invoices || invoices.length === 0 ? (
+                ) : safeInvoices.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                       <div className="flex flex-col items-center justify-center gap-2">
@@ -67,7 +68,7 @@ export default function InvoicesList() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  invoices.map((invoice) => (
+                  safeInvoices.map((invoice) => (
                     <TableRow key={invoice.id}>
                       <TableCell className="font-medium">
                         <Link href={`/finance/invoices/${invoice.id}`} className="text-primary hover:underline">

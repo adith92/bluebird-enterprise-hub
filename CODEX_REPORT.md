@@ -47,6 +47,8 @@ Date: **2026-05-07** (Asia/Jakarta)
 - ✅ `pnpm install` (after enabling required optional native deps)
 - ✅ `pnpm run typecheck` (pass)
 - ✅ `pnpm run build` (pass)
+- ✅ `pnpm run test:e2e` (pass)
+- ✅ `pnpm run test` (no project tests yet; command succeeds)
 
 ## 7) Remaining Risks ⚠️
 

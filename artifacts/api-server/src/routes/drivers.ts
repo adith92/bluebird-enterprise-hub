@@ -12,15 +12,17 @@ import {
   GetDriverParams,
 } from "@workspace/api-zod";
 import { serializeDriver, serializeOrder } from "../lib/serialize";
+import { requireAuth } from "../middleware/auth";
+import { asyncHandler } from "../middleware/async";
 
 const router: IRouter = Router();
 
-router.get("/drivers", async (_req, res): Promise<void> => {
+router.get("/drivers", requireAuth, asyncHandler(async (_req, res): Promise<void> => {
   const rows = await db.select().from(driversTable).orderBy(driversTable.name);
   res.json(rows.map(serializeDriver));
-});
+}));
 
-router.post("/drivers", async (req, res): Promise<void> => {
+router.post("/drivers", requireAuth, asyncHandler(async (req, res): Promise<void> => {
   const parsed = CreateDriverBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -34,9 +36,9 @@ router.post("/drivers", async (req, res): Promise<void> => {
   }
 
   res.status(201).json(serializeDriver(d));
-});
+}));
 
-router.get("/drivers/:id", async (req, res): Promise<void> => {
+router.get("/drivers/:id", requireAuth, asyncHandler(async (req, res): Promise<void> => {
   const params = GetDriverParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -84,6 +86,6 @@ router.get("/drivers/:id", async (req, res): Promise<void> => {
       ),
     ),
   });
-});
+}));
 
 export default router;

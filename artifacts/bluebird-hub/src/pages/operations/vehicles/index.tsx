@@ -16,6 +16,7 @@ export default function VehiclesList() {
   const { data: vehicles, isLoading } = useListVehicles(
     statusFilter === "all" ? {} : { status: statusFilter }
   );
+  const safeVehicles = Array.isArray(vehicles) ? vehicles : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -64,14 +65,14 @@ export default function VehiclesList() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ) : !vehicles || vehicles.length === 0 ? (
+                ) : safeVehicles.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                       No vehicles found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  vehicles.map((vehicle) => (
+                  safeVehicles.map((vehicle) => (
                     <TableRow key={vehicle.id}>
                       <TableCell className="font-medium">
                         <Link href={`/operations/vehicles/${vehicle.id}`} className="text-primary hover:underline">

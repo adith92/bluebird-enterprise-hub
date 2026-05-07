@@ -6,3 +6,5 @@ dist
 artifacts/bluebird-hub/test-results
 artifacts/bluebird-hub/playwright-report
 
+# TS build artifacts
+*.tsbuildinfo

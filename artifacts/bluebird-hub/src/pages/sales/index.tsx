@@ -16,6 +16,7 @@ export default function OrdersList() {
   const { data: orders, isLoading } = useListOrders(
     statusFilter === "all" ? {} : { status: statusFilter }
   );
+  const safeOrders = Array.isArray(orders) ? orders : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -66,14 +67,14 @@ export default function OrdersList() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ) : !orders || orders.length === 0 ? (
+                ) : safeOrders.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                       No orders found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  orders.map((order) => (
+                  safeOrders.map((order) => (
                     <TableRow key={order.id}>
                       <TableCell className="font-medium">
                         <Link href={`/sales/${order.id}`} className="text-primary hover:underline">

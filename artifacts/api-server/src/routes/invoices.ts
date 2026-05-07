@@ -15,10 +15,12 @@ import {
   UpdateInvoiceStatusBody,
 } from "@workspace/api-zod";
 import { serializeInvoice, serializeOrder } from "../lib/serialize";
+import { requireAuth } from "../middleware/auth";
+import { asyncHandler } from "../middleware/async";
 
 const router: IRouter = Router();
 
-router.get("/invoices", async (req, res): Promise<void> => {
+router.get("/invoices", requireAuth, asyncHandler(async (req, res): Promise<void> => {
   const params = ListInvoicesQueryParams.safeParse(req.query);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -52,9 +54,9 @@ router.get("/invoices", async (req, res): Promise<void> => {
       ),
     ),
   );
-});
+}));
 
-router.get("/invoices/:id", async (req, res): Promise<void> => {
+router.get("/invoices/:id", requireAuth, asyncHandler(async (req, res): Promise<void> => {
   const params = GetInvoiceParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -96,9 +98,9 @@ router.get("/invoices/:id", async (req, res): Promise<void> => {
       row.driverName ?? "—",
     ),
   });
-});
+}));
 
-router.patch("/invoices/:id", async (req, res): Promise<void> => {
+router.patch("/invoices/:id", requireAuth, asyncHandler(async (req, res): Promise<void> => {
   const params = UpdateInvoiceStatusParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -149,6 +151,6 @@ router.patch("/invoices/:id", async (req, res): Promise<void> => {
       client?.name ?? "—",
     ),
   );
-});
+}));
 
 export default router;

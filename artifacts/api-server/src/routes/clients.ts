@@ -17,10 +17,12 @@ import {
   serializeOrder,
   serializeInvoice,
 } from "../lib/serialize";
+import { requireAuth } from "../middleware/auth";
+import { asyncHandler } from "../middleware/async";
 
 const router: IRouter = Router();
 
-router.get("/clients", async (_req, res): Promise<void> => {
+router.get("/clients", requireAuth, asyncHandler(async (_req, res): Promise<void> => {
   const clients = await db.select().from(clientsTable).orderBy(clientsTable.name);
 
   if (clients.length === 0) {
@@ -51,9 +53,9 @@ router.get("/clients", async (_req, res): Promise<void> => {
       );
     }),
   );
-});
+}));
 
-router.post("/clients", async (req, res): Promise<void> => {
+router.post("/clients", requireAuth, asyncHandler(async (req, res): Promise<void> => {
   const parsed = CreateClientBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -71,9 +73,9 @@ router.post("/clients", async (req, res): Promise<void> => {
   }
 
   res.status(201).json(serializeClient(client, 0, 0));
-});
+}));
 
-router.get("/clients/:id", async (req, res): Promise<void> => {
+router.get("/clients/:id", requireAuth, asyncHandler(async (req, res): Promise<void> => {
   const params = GetClientParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -143,6 +145,6 @@ router.get("/clients/:id", async (req, res): Promise<void> => {
     orders: apiOrders,
     invoices: apiInvoices,
   });
-});
+}));
 
 export default router;

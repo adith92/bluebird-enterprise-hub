@@ -8,10 +8,12 @@ import {
   invoicesTable,
   clientsTable,
 } from "@workspace/db";
+import { requireAuth } from "../middleware/auth";
+import { asyncHandler } from "../middleware/async";
 
 const router: IRouter = Router();
 
-router.get("/dashboard/summary", async (_req, res): Promise<void> => {
+router.get("/dashboard/summary", requireAuth, asyncHandler(async (_req, res): Promise<void> => {
   const [vehicles, drivers, orders, invoices, clientsCount] = await Promise.all([
     db.select().from(vehiclesTable),
     db.select().from(driversTable),
@@ -110,9 +112,9 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
     revenueByCategory,
     ordersByMonth,
   });
-});
+}));
 
-router.get("/dashboard/maintenance-alerts", async (_req, res): Promise<void> => {
+router.get("/dashboard/maintenance-alerts", requireAuth, asyncHandler(async (_req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(vehiclesTable)
@@ -145,9 +147,9 @@ router.get("/dashboard/maintenance-alerts", async (_req, res): Promise<void> => 
     .sort((a, b) => a.daysRemaining - b.daysRemaining);
 
   res.json(alerts);
-});
+}));
 
-router.get("/dashboard/recent-activity", async (_req, res): Promise<void> => {
+router.get("/dashboard/recent-activity", requireAuth, asyncHandler(async (_req, res): Promise<void> => {
   const recentOrders = await db
     .select({
       o: ordersTable,
@@ -239,7 +241,7 @@ router.get("/dashboard/recent-activity", async (_req, res): Promise<void> => {
   items.sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1));
 
   res.json(items.slice(0, 12));
-});
+}));
 
 // Suppress unused-var warnings
 void and;

@@ -8,6 +8,7 @@ import { Plus, Star } from "lucide-react";
 
 export default function DriversList() {
   const { data: drivers, isLoading } = useListDrivers();
+  const safeDrivers = Array.isArray(drivers) ? drivers : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -45,14 +46,14 @@ export default function DriversList() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ) : !drivers || drivers.length === 0 ? (
+                ) : safeDrivers.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                       No drivers found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  drivers.map((driver) => (
+                  safeDrivers.map((driver) => (
                     <TableRow key={driver.id}>
                       <TableCell className="font-medium">
                         <Link href={`/operations/drivers/${driver.id}`} className="text-primary hover:underline">

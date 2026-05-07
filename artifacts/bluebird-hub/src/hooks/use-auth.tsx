@@ -21,6 +21,33 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const API_BASE = ((import.meta.env.VITE_API_BASE_URL as string | undefined) || `${BASE}/api`).replace(/\/$/, "");
+const DEMO_MODE = String(import.meta.env.VITE_DEMO_MODE || "").toLowerCase() === "true";
+
+const DEMO_USERS: Record<string, { displayName: string; role: UserRole; password: string }> = {
+  gm: { displayName: "General Manager", role: "gm", password: "bluebird" },
+  sales: { displayName: "Sales Team", role: "sales", password: "bluebird" },
+  operations: { displayName: "Operations Team", role: "operations", password: "bluebird" },
+  finance: { displayName: "Finance Team", role: "finance", password: "bluebird" },
+  admin: { displayName: "Demo Admin", role: "gm", password: "admin" },
+};
+
+function loadDemoUser(): AuthUser | null {
+  try {
+    const raw = localStorage.getItem("bb_demo_user");
+    if (!raw) return null;
+    return JSON.parse(raw) as AuthUser;
+  } catch {
+    return null;
+  }
+}
+
+function saveDemoUser(user: AuthUser | null) {
+  if (!user) {
+    localStorage.removeItem("bb_demo_user");
+    return;
+  }
+  localStorage.setItem("bb_demo_user", JSON.stringify(user));
+}
 
 async function apiFetch(path: string, options?: RequestInit) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -36,6 +63,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setUser(loadDemoUser());
+      setLoading(false);
+      return;
+    }
+
     apiFetch("/auth/me")
       .then(async (res) => {
         if (res.ok) setUser(await res.json());
@@ -44,6 +77,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (username: string, password: string) => {
+    if (DEMO_MODE) {
+      const key = username.trim().toLowerCase();
+      const pass = password.trim();
+      const demo = DEMO_USERS[key];
+      if (!demo || demo.password !== pass) throw new Error("Invalid credentials");
+      const demoUser: AuthUser = {
+        id: 1,
+        username: key,
+        displayName: demo.displayName,
+        role: demo.role,
+      };
+      setUser(demoUser);
+      saveDemoUser(demoUser);
+      return;
+    }
+
     const res = await apiFetch("/auth/login", {
       method: "POST",
       body: JSON.stringify({ username, password }),
@@ -57,6 +106,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loginWithGoogle = async (idToken: string) => {
+    if (DEMO_MODE) {
+      // In demo mode without backend, treat Google as "gm".
+      const demoUser: AuthUser = { id: 2, username: "google-demo", displayName: "Google Demo", role: "gm" };
+      setUser(demoUser);
+      saveDemoUser(demoUser);
+      return;
+    }
+
     const res = await apiFetch("/auth/google", {
       method: "POST",
       body: JSON.stringify({ idToken }),
@@ -70,6 +127,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    if (DEMO_MODE) {
+      setUser(null);
+      saveDemoUser(null);
+      return;
+    }
     await apiFetch("/auth/logout", { method: "POST" });
     setUser(null);
   };

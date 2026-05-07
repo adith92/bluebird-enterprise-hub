@@ -16,3 +16,7 @@ This project follows **Semantic Versioning** (SemVer): `MAJOR.MINOR.PATCH`.
 - 🟦 Added “Continue with Google” login option (Google ID token verification on API)
 - 👑 Seeded `admin/admin` demo account (configurable via `DEMO_ADMIN_*`)
 - 📚 Added root README (full emoji) + contributor prompt guide + env examples
+
+## 0.1.2 - 2026-05-07
+
+- 🧪 Added `VITE_DEMO_MODE` to run the frontend locally without Postgres/API (localStorage-backed demo auth)
